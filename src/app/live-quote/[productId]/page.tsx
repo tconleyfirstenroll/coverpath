@@ -1,13 +1,12 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
-  ArrowLeft, Zap, Loader2, Building2, AlertCircle,
+  Zap, Loader2, Building2, AlertCircle,
   CheckCircle2, RotateCcw, Phone, ChevronRight,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import type { A360Product, A360QuoteResult } from '@/types/agent360';
 
 type Step = 'loading' | 'not-found' | 'form' | 'calculating' | 'results' | 'error';
@@ -24,7 +23,6 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 export default function LiveQuotePage() {
   const { productId } = useParams<{ productId: string }>();
-  const router = useRouter();
 
   const [step, setStep] = useState<Step>('loading');
   const [product, setProduct] = useState<A360Product | null>(null);
@@ -154,7 +152,7 @@ export default function LiveQuotePage() {
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
             <h2 className="text-xl font-bold text-slate-900 mb-1">Get Your Personal Rate</h2>
             <p className="text-slate-500 text-sm mb-6">
-              Fill in your details below and we'll calculate your rate instantly.
+              Fill in your details below and we&apos;ll calculate your rate instantly.
             </p>
 
             {sortedFields.length === 0 ? (
@@ -234,7 +232,7 @@ export default function LiveQuotePage() {
         {step === 'error' && (
           <div className="bg-white rounded-2xl border border-red-100 shadow-sm p-8 text-center space-y-4">
             <AlertCircle className="w-10 h-10 text-red-400 mx-auto" />
-            <p className="font-semibold text-slate-900">We couldn't calculate your rate</p>
+            <p className="font-semibold text-slate-900">We couldn&apos;t calculate your rate</p>
             <p className="text-sm text-slate-500">{errorMessage}</p>
             <button
               onClick={reset}
