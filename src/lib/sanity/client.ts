@@ -1,9 +1,13 @@
 import { createClient } from 'next-sanity';
 
-export const isSanityConfigured = !!process.env.NEXT_PUBLIC_SANITY_PROJECT_ID;
+// Strip any accidental surrounding quotes that env tooling might add
+const rawProjectId = (process.env.NEXT_PUBLIC_SANITY_PROJECT_ID ?? '').replace(/^["']|["']$/g, '');
+
+// Valid Sanity project IDs are a-z, 0-9, and dashes only
+export const isSanityConfigured = /^[a-z0-9-]+$/.test(rawProjectId);
 
 export const client = createClient({
-  projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID ?? 'placeholder',
+  projectId: isSanityConfigured ? rawProjectId : 'placeholder',
   dataset: process.env.NEXT_PUBLIC_SANITY_DATASET ?? 'production',
   apiVersion: '2024-01-01',
   useCdn: true,
