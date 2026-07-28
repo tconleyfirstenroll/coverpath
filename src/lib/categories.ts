@@ -1,6 +1,8 @@
-import type { CategoryMeta } from '@/types';
+import { client, isSanityConfigured } from './sanity/client';
+import { ALL_CATEGORIES_QUERY, CATEGORY_BY_SLUG_QUERY } from './sanity/queries';
+import type { CategoryMeta, PlanCategory } from '@/types';
 
-export const CATEGORIES: CategoryMeta[] = [
+const STATIC_CATEGORIES: CategoryMeta[] = [
   {
     slug: 'short-term-medical',
     name: 'Short Term Medical',
@@ -10,12 +12,12 @@ export const CATEGORIES: CategoryMeta[] = [
     bgColor: 'bg-blue-50',
     description: 'Flexible coverage for gaps between major medical plans.',
     longDescription:
-      'Short term medical plans provide temporary health coverage when you\'re between jobs, waiting for employer benefits to begin, or simply need a bridge until open enrollment. These plans cover doctor visits, urgent care, emergency services, and hospitalization at a fraction of traditional insurance costs.',
+      "Short term medical plans provide temporary health coverage when you're between jobs, waiting for employer benefits to begin, or simply need a bridge until open enrollment. These plans cover doctor visits, urgent care, emergency services, and hospitalization at a fraction of traditional insurance costs.",
     whoNeedsIt: [
       'Recently unemployed or between jobs',
       'Waiting for employer benefits to start',
       'Early retirees under 65',
-      'Young adults aging off parents\' plan',
+      "Young adults aging off parents' plan",
       'Missed open enrollment window',
     ],
     keyBenefits: [
@@ -25,18 +27,9 @@ export const CATEGORIES: CategoryMeta[] = [
       'No enrollment period restrictions',
     ],
     faqs: [
-      {
-        question: 'How quickly can coverage begin?',
-        answer: 'Many short term plans can begin as early as the next day after approval.',
-      },
-      {
-        question: 'Are pre-existing conditions covered?',
-        answer: 'Most short term plans exclude pre-existing conditions. Check the plan details for specific exclusions.',
-      },
-      {
-        question: 'Can I renew my plan?',
-        answer: 'Yes, many short term plans are renewable up to 36 months depending on your state regulations.',
-      },
+      { question: 'How quickly can coverage begin?', answer: 'Many short term plans can begin as early as the next day after approval.' },
+      { question: 'Are pre-existing conditions covered?', answer: 'Most short term plans exclude pre-existing conditions. Check the plan details for specific exclusions.' },
+      { question: 'Can I renew my plan?', answer: 'Yes, many short term plans are renewable up to 36 months depending on your state regulations.' },
     ],
   },
   {
@@ -48,7 +41,7 @@ export const CATEGORIES: CategoryMeta[] = [
     bgColor: 'bg-violet-50',
     description: 'Cash benefits paid directly to you during a hospital stay.',
     longDescription:
-      'Hospital indemnity plans pay you a fixed daily or lump-sum cash benefit when you\'re admitted to the hospital. The money goes directly to you — use it for medical bills, lost wages, childcare, or any other expense. This coverage works alongside your primary health insurance to fill in the gaps.',
+      "Hospital indemnity plans pay you a fixed daily or lump-sum cash benefit when you're admitted to the hospital. The money goes directly to you — use it for medical bills, lost wages, childcare, or any other expense. This coverage works alongside your primary health insurance to fill in the gaps.",
     whoNeedsIt: [
       'Anyone with a high-deductible health plan',
       'Self-employed individuals',
@@ -62,14 +55,8 @@ export const CATEGORIES: CategoryMeta[] = [
       'No network restrictions — use any hospital',
     ],
     faqs: [
-      {
-        question: 'Can I use the benefit money for anything?',
-        answer: 'Yes! Cash benefits are paid directly to you with no restrictions on how you spend the money.',
-      },
-      {
-        question: 'Does this replace my health insurance?',
-        answer: 'No. Hospital indemnity is a supplemental plan designed to work alongside your primary insurance.',
-      },
+      { question: 'Can I use the benefit money for anything?', answer: 'Yes! Cash benefits are paid directly to you with no restrictions on how you spend the money.' },
+      { question: 'Does this replace my health insurance?', answer: 'No. Hospital indemnity is a supplemental plan designed to work alongside your primary insurance.' },
     ],
   },
   {
@@ -95,14 +82,8 @@ export const CATEGORIES: CategoryMeta[] = [
       'Survivor benefit and return of premium options',
     ],
     faqs: [
-      {
-        question: 'What types of cancer are covered?',
-        answer: 'Most plans cover internal cancers, lymphoma, leukemia, and more. Skin cancers may have separate benefit levels.',
-      },
-      {
-        question: 'When does coverage begin?',
-        answer: 'There is typically a 30-day waiting period before cancer benefits become payable.',
-      },
+      { question: 'What types of cancer are covered?', answer: 'Most plans cover internal cancers, lymphoma, leukemia, and more. Skin cancers may have separate benefit levels.' },
+      { question: 'When does coverage begin?', answer: 'There is typically a 30-day waiting period before cancer benefits become payable.' },
     ],
   },
   {
@@ -128,14 +109,8 @@ export const CATEGORIES: CategoryMeta[] = [
       'Orthodontia coverage available on select plans',
     ],
     faqs: [
-      {
-        question: 'Is there a waiting period for major work?',
-        answer: 'Preventive care typically has no waiting period. Basic work may have a 3-month wait, and major procedures up to 12 months on some plans.',
-      },
-      {
-        question: 'Can I see any dentist?',
-        answer: 'PPO plans allow you to see any dentist, though in-network providers offer better rates.',
-      },
+      { question: 'Is there a waiting period for major work?', answer: 'Preventive care typically has no waiting period. Basic work may have a 3-month wait, and major procedures up to 12 months on some plans.' },
+      { question: 'Can I see any dentist?', answer: 'PPO plans allow you to see any dentist, though in-network providers offer better rates.' },
     ],
   },
   {
@@ -152,7 +127,7 @@ export const CATEGORIES: CategoryMeta[] = [
       'Anyone who wears glasses or contacts',
       'Those with a family history of eye disease',
       'Adults over 40 experiencing vision changes',
-      'Parents covering children\'s vision needs',
+      "Parents covering children's vision needs",
     ],
     keyBenefits: [
       'Annual eye exam covered at 100%',
@@ -161,14 +136,8 @@ export const CATEGORIES: CategoryMeta[] = [
       'LASIK discount of 15-40% with premium plans',
     ],
     faqs: [
-      {
-        question: 'How often can I get new glasses?',
-        answer: 'Most plans allow new frames or lenses once per year (every 12 months).',
-      },
-      {
-        question: 'Are contacts covered instead of glasses?',
-        answer: 'Yes, most plans let you choose between glasses or contacts each benefit period.',
-      },
+      { question: 'How often can I get new glasses?', answer: 'Most plans allow new frames or lenses once per year (every 12 months).' },
+      { question: 'Are contacts covered instead of glasses?', answer: 'Yes, most plans let you choose between glasses or contacts each benefit period.' },
     ],
   },
   {
@@ -194,14 +163,8 @@ export const CATEGORIES: CategoryMeta[] = [
       'Mobile app to compare drug prices and find savings',
     ],
     faqs: [
-      {
-        question: 'What is a drug formulary?',
-        answer: 'A formulary is the list of covered drugs. Tier 1 drugs cost the least, with costs increasing for Tier 2 (preferred brand) and Tier 3 (non-preferred/specialty).',
-      },
-      {
-        question: 'Can I use this at any pharmacy?',
-        answer: 'Plans include a large network. Using in-network pharmacies like CVS, Walgreens, and Walmart gives you the best pricing.',
-      },
+      { question: 'What is a drug formulary?', answer: 'A formulary is the list of covered drugs. Tier 1 drugs cost the least, with costs increasing for Tier 2 (preferred brand) and Tier 3 (non-preferred/specialty).' },
+      { question: 'Can I use this at any pharmacy?', answer: 'Plans include a large network. Using in-network pharmacies like CVS, Walgreens, and Walmart gives you the best pricing.' },
     ],
   },
   {
@@ -227,18 +190,39 @@ export const CATEGORIES: CategoryMeta[] = [
       'Waiver of premium if disabled',
     ],
     faqs: [
-      {
-        question: 'What conditions are covered?',
-        answer: 'Common covered conditions include heart attack, stroke, major organ transplant, end-stage renal failure, blindness, paralysis, and certain cancers.',
-      },
-      {
-        question: 'Is there a survival period required?',
-        answer: 'Some plans require you to survive a set number of days (e.g., 30 days) after diagnosis to receive the benefit. Check the plan details.',
-      },
+      { question: 'What conditions are covered?', answer: 'Common covered conditions include heart attack, stroke, major organ transplant, end-stage renal failure, blindness, paralysis, and certain cancers.' },
+      { question: 'Is there a survival period required?', answer: 'Some plans require you to survive a set number of days (e.g., 30 days) after diagnosis to receive the benefit. Check the plan details.' },
     ],
   },
 ];
 
-export function getCategoryBySlug(slug: string): CategoryMeta | undefined {
-  return CATEGORIES.find((c) => c.slug === slug);
+async function fetchFromSanity<T>(query: string, params: Record<string, unknown> = {}): Promise<T | null> {
+  try {
+    return await client.fetch<T>(query, params, { next: { revalidate: 300 } });
+  } catch {
+    return null;
+  }
 }
+
+export async function getCategories(): Promise<CategoryMeta[]> {
+  if (!isSanityConfigured) return STATIC_CATEGORIES;
+  const cats = await fetchFromSanity<CategoryMeta[]>(ALL_CATEGORIES_QUERY);
+  return cats?.length ? (cats as CategoryMeta[]) : STATIC_CATEGORIES;
+}
+
+export async function getCategoryBySlug(slug: string): Promise<CategoryMeta | undefined> {
+  if (!isSanityConfigured) return STATIC_CATEGORIES.find((c) => c.slug === slug);
+  const cat = await fetchFromSanity<CategoryMeta | null>(CATEGORY_BY_SLUG_QUERY, { slug });
+  return (cat as CategoryMeta | null | undefined) ?? STATIC_CATEGORIES.find((c) => c.slug === slug);
+}
+
+// Kept for generateStaticParams which needs category slugs synchronously at build time
+export const CATEGORY_SLUGS: PlanCategory[] = [
+  'short-term-medical',
+  'hospital-indemnity',
+  'cancer',
+  'dental',
+  'vision',
+  'prescription',
+  'critical-illness',
+];

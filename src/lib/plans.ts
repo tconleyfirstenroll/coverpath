@@ -1,3 +1,9 @@
+import { client, isSanityConfigured } from './sanity/client';
+import {
+  ALL_PLANS_QUERY,
+  PLAN_BY_ID_QUERY,
+  PLANS_BY_CATEGORY_QUERY,
+} from './sanity/queries';
 import type { Plan } from '@/types';
 
 const ALL_STATES = [
@@ -9,7 +15,8 @@ const ALL_STATES = [
 
 const MOST_STATES = ALL_STATES.filter((s) => !['NY','NJ','MA','VT'].includes(s));
 
-export const PLANS: Plan[] = [
+// Static fallback data — used when Sanity is not configured or returns empty
+const STATIC_PLANS: Plan[] = [
   // ── Short Term Medical ──────────────────────────────────────────────────
   {
     id: 'stm-basic',
@@ -109,7 +116,6 @@ export const PLANS: Plan[] = [
     maxBenefit: '$500,000 per term',
     availableStates: MOST_STATES,
   },
-
   // ── Hospital Indemnity ──────────────────────────────────────────────────
   {
     id: 'hi-essential',
@@ -179,7 +185,6 @@ export const PLANS: Plan[] = [
     maxBenefit: '$700/day, up to 365 days',
     availableStates: ALL_STATES,
   },
-
   // ── Cancer Plans ───────────────────────────────────────────────────────
   {
     id: 'cancer-core',
@@ -249,7 +254,6 @@ export const PLANS: Plan[] = [
     waitingPeriod: '30 days',
     availableStates: ALL_STATES,
   },
-
   // ── Dental Plans ───────────────────────────────────────────────────────
   {
     id: 'dental-preventive',
@@ -305,6 +309,7 @@ export const PLANS: Plan[] = [
     rating: 4.6,
     reviewCount: 412,
     tagline: 'Comprehensive dental care including major work and orthodontia.',
+    highlights: ['Crowns & root canals', 'Orthodontia included', '$2,000 annual max'],
     benefits: [
       { label: 'Preventive (cleanings, X-rays)', value: '100% covered', included: true },
       { label: 'Basic (fillings)', value: '80% after deductible', included: true },
@@ -313,10 +318,8 @@ export const PLANS: Plan[] = [
       { label: 'Annual maximum', value: '$2,000', included: true },
       { label: 'Deductible', value: '$50/year', included: true },
     ],
-    highlights: ['Crowns & root canals', 'Orthodontia included', '$2,000 annual max'],
     availableStates: ALL_STATES,
   },
-
   // ── Vision Plans ────────────────────────────────────────────────────────
   {
     id: 'vision-standard',
@@ -383,7 +386,6 @@ export const PLANS: Plan[] = [
     ],
     availableStates: ALL_STATES,
   },
-
   // ── Prescription Plans ──────────────────────────────────────────────────
   {
     id: 'rx-generic',
@@ -450,7 +452,6 @@ export const PLANS: Plan[] = [
     ],
     availableStates: ALL_STATES,
   },
-
   // ── Critical Illness ────────────────────────────────────────────────────
   {
     id: 'ci-basic',
@@ -522,24 +523,39 @@ export const PLANS: Plan[] = [
   },
 ];
 
-export function getAllPlans(): Plan[] {
-  return PLANS;
+async function fetchFromSanity<T>(query: string, params: Record<string, unknown> = {}): Promise<T | null> {
+  try {
+    return await client.fetch<T>(query, params, { next: { revalidate: 300 } });
+  } catch {
+    return null;
+  }
 }
 
-export function getPlansByCategory(category: string): Plan[] {
-  return PLANS.filter((p) => p.category === category);
+export async function getAllPlans(): Promise<Plan[]> {
+  if (!isSanityConfigured) return STATIC_PLANS;
+  const plans = await fetchFromSanity<Plan[]>(ALL_PLANS_QUERY);
+  return plans?.length ? (plans as Plan[]) : STATIC_PLANS;
 }
 
-export function getPlanById(id: string): Plan | undefined {
-  return PLANS.find((p) => p.id === id);
+export async function getPlanById(id: string): Promise<Plan | undefined> {
+  if (!isSanityConfigured) return STATIC_PLANS.find((p) => p.id === id);
+  const plan = await fetchFromSanity<Plan | null>(PLAN_BY_ID_QUERY, { id });
+  return (plan as Plan | null | undefined) ?? STATIC_PLANS.find((p) => p.id === id);
 }
 
-export function filterPlans(options: {
+export async function getPlansByCategory(category: string): Promise<Plan[]> {
+  if (!isSanityConfigured) return STATIC_PLANS.filter((p) => p.category === category);
+  const plans = await fetchFromSanity<Plan[]>(PLANS_BY_CATEGORY_QUERY, { category });
+  return plans?.length ? (plans as Plan[]) : STATIC_PLANS.filter((p) => p.category === category);
+}
+
+export async function filterPlans(options: {
   categories?: string[];
   maxMonthly?: number;
   state?: string;
-}): Plan[] {
-  return PLANS.filter((p) => {
+}): Promise<Plan[]> {
+  const all = await getAllPlans();
+  return all.filter((p) => {
     if (options.categories?.length && !options.categories.includes(p.category)) return false;
     if (options.maxMonthly && p.monthlyPremium > options.maxMonthly) return false;
     if (options.state && !p.availableStates.includes(options.state)) return false;

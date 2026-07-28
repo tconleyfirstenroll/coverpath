@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Star, CheckCircle2, XCircle, ChevronRight, Shield, Phone } from 'lucide-react';
-import { getPlanById, getPlansByCategory, PLANS } from '@/lib/plans';
+import { getPlanById, getPlansByCategory, getAllPlans } from '@/lib/plans';
 import { getCategoryBySlug } from '@/lib/categories';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,12 +12,13 @@ interface Props {
   params: { category: string; planId: string };
 }
 
-export function generateStaticParams() {
-  return PLANS.map((p) => ({ category: p.category, planId: p.id }));
+export async function generateStaticParams() {
+  const plans = await getAllPlans();
+  return plans.map((p) => ({ category: p.category, planId: p.id }));
 }
 
 export async function generateMetadata({ params }: Props) {
-  const plan = getPlanById(params.planId);
+  const plan = await getPlanById(params.planId);
   if (!plan) return {};
   return {
     title: `${plan.name} — ${plan.carrier} | CoverPath`,
@@ -25,18 +26,19 @@ export async function generateMetadata({ params }: Props) {
   };
 }
 
-export default function PlanDetailPage({ params }: Props) {
-  const plan = getPlanById(params.planId);
+export default async function PlanDetailPage({ params }: Props) {
+  const [plan, relatedAll, cat] = await Promise.all([
+    getPlanById(params.planId),
+    getPlansByCategory(params.category),
+    getCategoryBySlug(params.category),
+  ]);
+
   if (!plan || plan.category !== params.category) notFound();
 
-  const cat = getCategoryBySlug(plan.category);
-  const relatedPlans = getPlansByCategory(plan.category)
-    .filter((p) => p.id !== plan.id)
-    .slice(0, 2);
+  const relatedPlans = relatedAll.filter((p) => p.id !== plan.id).slice(0, 2);
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Top bar */}
       <div className="bg-white border-b border-slate-200">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <nav className="flex items-center gap-1.5 text-slate-500 text-sm">
@@ -51,9 +53,7 @@ export default function PlanDetailPage({ params }: Props) {
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* Main */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Plan header card */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-6">
               <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                 <div className="flex-1">
@@ -85,7 +85,6 @@ export default function PlanDetailPage({ params }: Props) {
                   )}
                 </div>
               </div>
-
               <div className="flex flex-wrap gap-2 mt-4">
                 {plan.highlights.map((h) => (
                   <span key={h} className="text-xs bg-blue-50 text-blue-700 border border-blue-100 px-3 py-1 rounded-full font-medium">
@@ -95,7 +94,6 @@ export default function PlanDetailPage({ params }: Props) {
               </div>
             </div>
 
-            {/* Benefits table */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-6">
               <h2 className="text-lg font-bold text-slate-900 mb-4">Coverage Details</h2>
               <div className="divide-y divide-slate-100">
@@ -115,7 +113,6 @@ export default function PlanDetailPage({ params }: Props) {
                 ))}
               </div>
 
-              {/* Additional details */}
               {(plan.coinsurance || plan.waitingPeriod || plan.maxBenefit) && (
                 <div className="mt-4 pt-4 border-t border-slate-100 grid sm:grid-cols-3 gap-4">
                   {plan.coinsurance && (
@@ -140,7 +137,6 @@ export default function PlanDetailPage({ params }: Props) {
               )}
             </div>
 
-            {/* State availability */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-6">
               <h2 className="text-lg font-bold text-slate-900 mb-2 flex items-center gap-2">
                 <Shield className="w-5 h-5 text-blue-500" /> Availability
@@ -155,7 +151,6 @@ export default function PlanDetailPage({ params }: Props) {
               </div>
             </div>
 
-            {/* Related plans */}
             {relatedPlans.length > 0 && (
               <div>
                 <h2 className="text-lg font-bold text-slate-900 mb-4">Other {cat?.shortName ?? ''} Plans</h2>
@@ -168,20 +163,17 @@ export default function PlanDetailPage({ params }: Props) {
             )}
           </div>
 
-          {/* Sticky sidebar */}
           <div>
             <div className="sticky top-24 space-y-4">
-              {/* Enroll CTA */}
               <div className="bg-white rounded-2xl border border-blue-200 shadow-card p-5 text-center">
                 <div className="text-3xl font-extrabold text-blue-600 mb-0.5">${plan.monthlyPremium}<span className="text-lg font-normal text-slate-400">/mo</span></div>
                 <p className="text-xs text-slate-500 mb-4">All prices are estimates. Final rate based on age and state.</p>
                 <Link href={`/enroll/${plan.id}`}>
                   <Button size="lg" className="w-full mb-2">Enroll Now</Button>
                 </Link>
-                <p className="text-xs text-slate-400">No commitment • Cancel anytime</p>
+                <p className="text-xs text-slate-400">No commitment · Cancel anytime</p>
               </div>
 
-              {/* Talk to agent */}
               <div className="bg-teal-50 border border-teal-200 rounded-xl p-4 text-center">
                 <Phone className="w-6 h-6 text-teal-600 mx-auto mb-2" />
                 <p className="text-sm font-semibold text-teal-900 mb-1">Have questions?</p>

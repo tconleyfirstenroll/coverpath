@@ -5,7 +5,7 @@ import {
   Heart, Eye, Pill, AlertCircle, Building2, Ribbon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { CATEGORIES } from '@/lib/categories';
+import { getCategories } from '@/lib/categories';
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   'short-term-medical': <Heart className="w-6 h-6" />,
@@ -48,7 +48,8 @@ const TESTIMONIALS = [
   },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const CATEGORIES = await getCategories();
   return (
     <div className="overflow-x-hidden">
       {/* Hero */}
