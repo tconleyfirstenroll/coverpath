@@ -11,6 +11,20 @@ import type { A360Product, A360QuoteResult } from '@/types/agent360';
 
 type Step = 'loading' | 'not-found' | 'form' | 'calculating' | 'results' | 'error';
 
+const SELECT_OPTIONS: Record<string, { label: string; value: string }[]> = {
+  gender: [
+    { label: 'Male', value: 'Male' },
+    { label: 'Female', value: 'Female' },
+  ],
+  state: [
+    'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA',
+    'HI','ID','IL','IN','IA','KS','KY','LA','ME','MD',
+    'MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ',
+    'NM','NY','NC','ND','OH','OK','OR','PA','RI','SC',
+    'SD','TN','TX','UT','VT','VA','WA','WV','WI','WY',
+  ].map((s) => ({ label: s, value: s })),
+};
+
 const CATEGORY_LABELS: Record<string, string> = {
   life: 'Life Insurance',
   health: 'Health Insurance',
@@ -189,6 +203,18 @@ export default function LiveQuotePage() {
                           <option value="">Select…</option>
                           <option value="true">Yes</option>
                           <option value="false">No</option>
+                        </select>
+                      ) : field.field_type === 'select' ? (
+                        <select
+                          value={formValues[field.field_key] ?? ''}
+                          onChange={(e) => setFormValues((p) => ({ ...p, [field.field_key]: e.target.value }))}
+                          required={field.is_required}
+                          className="w-full h-10 rounded-lg border border-slate-300 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                        >
+                          <option value="">Select…</option>
+                          {(SELECT_OPTIONS[field.field_key] ?? []).map((opt) => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
                         </select>
                       ) : field.field_type === 'textarea' ? (
                         <textarea
