@@ -66,6 +66,17 @@ export default function LiveQuotePage() {
       }
       setQuoteResult(json);
       setStep('results');
+      // Fire-and-forget — capture lead in agent360; never block or fail the UI
+      fetch('/api/a360-lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          product_id: productId,
+          product_name: product?.name ?? null,
+          consumer_data: formValues,
+          quote_result: json,
+        }),
+      }).catch(() => {});
     } catch {
       setErrorMessage('A network error occurred. Please check your connection and try again.');
       setStep('error');

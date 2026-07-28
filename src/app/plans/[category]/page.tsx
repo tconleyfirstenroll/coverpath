@@ -9,7 +9,7 @@ import { Agent360ProductCard } from '@/components/plans/agent360-product-card';
 import { Button } from '@/components/ui/button';
 import type { A360Product } from '@/types/agent360';
 
-export const revalidate = 300;
+export const dynamic = 'force-dynamic';
 
 interface Props {
   params: { category: string };

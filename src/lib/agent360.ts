@@ -16,7 +16,7 @@ export async function fetchA360Products(): Promise<{ data: A360Product[]; agent_
   try {
     const res = await fetch(
       `${BASE_URL}/api/public/products?agent_number=${encodeURIComponent(DEFAULT_AGENT_NUMBER)}`,
-      { headers: headers(), next: { revalidate: 300 } }
+      { headers: headers(), cache: 'no-store' }
     );
     if (!res.ok) return { data: [], agent_id: null };
     return res.json();
