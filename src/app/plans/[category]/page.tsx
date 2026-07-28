@@ -1,10 +1,15 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircle2, ChevronRight, HelpCircle } from 'lucide-react';
+import { CheckCircle2, ChevronRight, HelpCircle, Zap } from 'lucide-react';
 import { getCategoryBySlug, CATEGORIES } from '@/lib/categories';
 import { getPlansByCategory } from '@/lib/plans';
+import { fetchA360Products } from '@/lib/agent360';
 import { PlanCard } from '@/components/plans/plan-card';
+import { Agent360ProductCard } from '@/components/plans/agent360-product-card';
 import { Button } from '@/components/ui/button';
+import type { A360Product } from '@/types/agent360';
+
+export const revalidate = 300; // re-fetch live products every 5 minutes
 
 interface Props {
   params: { category: string };
@@ -23,11 +28,21 @@ export async function generateMetadata({ params }: Props) {
   };
 }
 
-export default function CategoryPage({ params }: Props) {
+function matchesCategory(product: A360Product, slug: string): boolean {
+  const pc = product.category.toLowerCase();
+  const sc = slug.toLowerCase();
+  // Exact match or either string contains the other
+  return pc === sc || pc.includes(sc) || sc.includes(pc);
+}
+
+export default async function CategoryPage({ params }: Props) {
   const cat = getCategoryBySlug(params.category);
   if (!cat) notFound();
 
   const plans = getPlansByCategory(cat.slug);
+
+  const { data: allLive } = await fetchA360Products();
+  const liveProducts = allLive.filter((p) => matchesCategory(p, cat.slug));
 
   return (
     <div className="min-h-screen">
@@ -70,11 +85,11 @@ export default function CategoryPage({ params }: Props) {
               <p className="text-slate-600 leading-relaxed">{cat.longDescription}</p>
             </section>
 
-            {/* Plans */}
+            {/* Static plans */}
             <section>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-bold text-slate-900">Available Plans</h2>
-                <span className="text-sm text-slate-500">{plans.length} options</span>
+                <span className="text-sm text-slate-500">{plans.length} option{plans.length !== 1 ? 's' : ''}</span>
               </div>
               <div className="grid sm:grid-cols-2 gap-5">
                 {plans.map((plan) => (
@@ -82,6 +97,24 @@ export default function CategoryPage({ params }: Props) {
                 ))}
               </div>
             </section>
+
+            {/* Live Rated Products */}
+            {liveProducts.length > 0 && (
+              <section className="mt-10">
+                <div className="flex items-center gap-2 mb-2">
+                  <Zap className="w-5 h-5 text-blue-600" />
+                  <h2 className="text-2xl font-bold text-slate-900">Live Rated Products</h2>
+                </div>
+                <p className="text-slate-500 text-sm mb-5">
+                  These products are priced in real time based on your details — get an accurate rate in seconds.
+                </p>
+                <div className="grid sm:grid-cols-2 gap-5">
+                  {liveProducts.map((product) => (
+                    <Agent360ProductCard key={product.id} product={product} />
+                  ))}
+                </div>
+              </section>
+            )}
 
             {/* FAQs */}
             {cat.faqs.length > 0 && (

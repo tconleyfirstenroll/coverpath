@@ -1,17 +1,30 @@
 'use client';
-import { useState, useMemo, Suspense } from 'react';
+import { useState, useMemo, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Search } from 'lucide-react';
+import { Search, Zap, Loader2 } from 'lucide-react';
 import { PlanCard } from '@/components/plans/plan-card';
+import { Agent360ProductCard } from '@/components/plans/agent360-product-card';
 import { PlanFilters, type FilterState } from '@/components/plans/plan-filters';
 import { getAllPlans } from '@/lib/plans';
 import { CATEGORIES } from '@/lib/categories';
 import Link from 'next/link';
 import type { Plan, PlanCategory } from '@/types';
+import type { A360Product } from '@/types/agent360';
 
 function PlansContent() {
   const searchParams = useSearchParams();
   const allPlans = getAllPlans();
+
+  const [liveProducts, setLiveProducts] = useState<A360Product[]>([]);
+  const [liveLoading, setLiveLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/a360-products')
+      .then((r) => r.json())
+      .then((json) => setLiveProducts(json.data ?? []))
+      .catch(() => setLiveProducts([]))
+      .finally(() => setLiveLoading(false));
+  }, []);
 
   const initialCategories = useMemo(() => {
     const cats = searchParams.get('categories');
@@ -68,13 +81,30 @@ function PlansContent() {
     return plans;
   }, [allPlans, filters, search]);
 
+  // Filter live products by search term (category filters don't apply — different taxonomy)
+  const filteredLive = useMemo(() => {
+    if (!search.trim()) return liveProducts;
+    const q = search.toLowerCase();
+    return liveProducts.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        (p.carrier?.name ?? '').toLowerCase().includes(q) ||
+        p.category.toLowerCase().includes(q),
+    );
+  }, [liveProducts, search]);
+
+  const totalShown = filtered.length + filteredLive.length;
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Page header */}
       <div className="bg-white border-b border-slate-200 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1 className="text-3xl font-extrabold text-slate-900">Browse All Plans</h1>
-          <p className="text-slate-500 mt-1">Compare {allPlans.length}+ plans across 7 coverage categories</p>
+          <p className="text-slate-500 mt-1">
+            Compare {allPlans.length}+ plans across 7 coverage categories
+            {liveProducts.length > 0 && ` · ${liveProducts.length} live rated product${liveProducts.length !== 1 ? 's' : ''} available`}
+          </p>
 
           {/* Category quick links */}
           <div className="flex flex-wrap gap-2 mt-4">
@@ -94,7 +124,7 @@ function PlansContent() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex gap-8">
           {/* Sidebar filters */}
-          <PlanFilters filters={filters} onChange={setFilters} totalCount={filtered.length} />
+          <PlanFilters filters={filters} onChange={setFilters} totalCount={totalShown} />
 
           {/* Main content */}
           <div className="flex-1 min-w-0">
@@ -110,15 +140,12 @@ function PlansContent() {
                   className="w-full h-10 pl-9 pr-4 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                 />
               </div>
-              <div className="flex items-center gap-2 sm:hidden">
-                <PlanFilters filters={filters} onChange={setFilters} totalCount={filtered.length} />
-              </div>
               <span className="text-sm text-slate-500 self-center whitespace-nowrap">
-                {filtered.length} plan{filtered.length !== 1 ? 's' : ''}
+                {totalShown} plan{totalShown !== 1 ? 's' : ''}
               </span>
             </div>
 
-            {/* Grid */}
+            {/* Static plans grid */}
             {filtered.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                 {filtered.map((plan) => (
@@ -126,10 +153,41 @@ function PlansContent() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-20 text-slate-400">
-                <Search className="w-10 h-10 mx-auto mb-3 opacity-40" />
-                <p className="font-semibold text-slate-600">No plans match your filters</p>
-                <p className="text-sm mt-1">Try adjusting your budget or removing a filter</p>
+              !liveLoading && filteredLive.length === 0 && (
+                <div className="text-center py-20 text-slate-400">
+                  <Search className="w-10 h-10 mx-auto mb-3 opacity-40" />
+                  <p className="font-semibold text-slate-600">No plans match your filters</p>
+                  <p className="text-sm mt-1">Try adjusting your budget or removing a filter</p>
+                </div>
+              )
+            )}
+
+            {/* Live Rated Products section */}
+            {(liveLoading || filteredLive.length > 0) && (
+              <div className="mt-10">
+                <div className="flex items-center gap-2 mb-4">
+                  <Zap className="w-5 h-5 text-blue-600" />
+                  <h2 className="text-lg font-bold text-slate-900">Live Rated Products</h2>
+                  <span className="text-xs text-slate-500 bg-blue-50 border border-blue-100 text-blue-600 font-medium px-2 py-0.5 rounded-full">
+                    Real-time pricing
+                  </span>
+                </div>
+                <p className="text-sm text-slate-500 mb-5">
+                  These products are rated live based on your personal details — get an accurate quote in seconds.
+                </p>
+
+                {liveLoading ? (
+                  <div className="flex items-center gap-3 py-8 text-slate-400">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span className="text-sm">Loading live products…</span>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                    {filteredLive.map((product) => (
+                      <Agent360ProductCard key={product.id} product={product} showCategory />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
