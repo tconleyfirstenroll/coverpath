@@ -5,6 +5,7 @@ export interface A360QuotingField {
   field_type: 'text' | 'number' | 'date' | 'select' | 'boolean' | 'textarea' | 'email' | 'phone';
   is_required: boolean;
   display_order: number;
+  options: string[];
 }
 
 export interface A360Plan {

@@ -212,7 +212,10 @@ export default function LiveQuotePage() {
                           className="w-full h-10 rounded-lg border border-slate-300 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                         >
                           <option value="">Select…</option>
-                          {(SELECT_OPTIONS[field.field_key] ?? []).map((opt) => (
+                          {(field.options?.length
+                            ? field.options.map((o) => ({ label: o, value: o }))
+                            : SELECT_OPTIONS[field.field_key] ?? []
+                          ).map((opt) => (
                             <option key={opt.value} value={opt.value}>{opt.label}</option>
                           ))}
                         </select>
