@@ -1,4 +1,4 @@
-import type { A360Product } from '@/types/agent360';
+import type { A360Product, A360QuoteResult } from '@/types/agent360';
 
 const BASE_URL = process.env.AGENT360_API_URL ?? '';
 const API_KEY = process.env.AGENT360_API_KEY ?? '';
@@ -39,12 +39,7 @@ export async function fetchA360Product(id: string): Promise<A360Product | null> 
 export async function submitA360Quote(
   productId: string,
   consumerData: Record<string, unknown>
-): Promise<{
-  quote_id: string | null;
-  rate: { final_rate: number; factors: { label: string; value: number }[]; breakdown: string } | null;
-  plans: { id: string; name: string; base_premium: number | null }[];
-  product_name: string;
-} | null> {
+): Promise<A360QuoteResult | null> {
   if (!BASE_URL || !API_KEY) return null;
   try {
     const res = await fetch(`${BASE_URL}/api/public/products/${productId}/quote`, {

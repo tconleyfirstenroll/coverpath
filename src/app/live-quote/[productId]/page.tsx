@@ -286,62 +286,48 @@ export default function LiveQuotePage() {
         {/* ── Step: Results ────────────────────────────────────────────────── */}
         {step === 'results' && quoteResult && (
           <div className="space-y-5">
-            {/* Rate result */}
-            <div className="bg-white rounded-2xl border border-blue-100 shadow-sm overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-600 to-blue-500 p-6 text-white text-center">
-                <div className="flex items-center justify-center gap-2 mb-1">
-                  <CheckCircle2 className="w-5 h-5" />
-                  <span className="font-semibold">Your Rate is Ready</span>
-                </div>
-                {quoteResult.rate ? (
-                  <>
-                    <div className="text-5xl font-extrabold mt-2">
-                      ${quoteResult.rate.final_rate.toFixed(2)}
-                    </div>
-                    <div className="text-blue-200 text-sm mt-1">estimated monthly premium</div>
-                  </>
-                ) : (
-                  <p className="text-blue-100 mt-2 text-sm">
-                    Rate calculated — see available plans below
-                  </p>
-                )}
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-500 rounded-2xl p-6 text-white text-center">
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <CheckCircle2 className="w-5 h-5" />
+                <span className="font-semibold">Your Personalized Rates are Ready</span>
               </div>
-
-              {/* Rating factors */}
-              {quoteResult.rate && quoteResult.rate.factors.length > 0 && (
-                <div className="p-5 border-t border-slate-100">
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Rating Factors</p>
-                  <div className="divide-y divide-slate-100">
-                    {quoteResult.rate.factors.map((f, i) => (
-                      <div key={i} className="flex justify-between py-2.5 text-sm">
-                        <span className="text-slate-600">{f.label}</span>
-                        <span className="font-semibold text-slate-900">{f.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <p className="text-blue-200 text-sm mt-1">
+                Select the plan that fits your needs and budget
+              </p>
             </div>
 
-            {/* Available plans */}
-            {quoteResult.plans.length > 0 && (
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-                <p className="text-sm font-semibold text-slate-700 mb-3">Available Plans</p>
-                <div className="space-y-2">
-                  {quoteResult.plans.map((plan) => (
-                    <div
-                      key={plan.id}
-                      className="flex items-center justify-between bg-slate-50 rounded-xl px-4 py-3"
-                    >
-                      <span className="text-sm font-medium text-slate-800">{plan.name}</span>
-                      {plan.base_premium != null && (
-                        <span className="text-sm font-bold text-blue-700">
-                          ${plan.base_premium.toFixed(2)}/mo
-                        </span>
+            {/* Per-plan rate cards */}
+            {quoteResult.plan_results.length > 0 && (
+              <div className="space-y-3">
+                {quoteResult.plan_results.map((plan) => (
+                  <div key={plan.plan_id} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div className="flex items-center justify-between px-5 py-4">
+                      <span className="font-bold text-slate-900">{plan.plan_name}</span>
+                      {plan.rate != null ? (
+                        <div className="text-right">
+                          <div className="text-2xl font-extrabold text-blue-700">${plan.rate.toFixed(2)}</div>
+                          <div className="text-xs text-slate-500">per month</div>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-red-500">{plan.error ?? 'Rate unavailable'}</span>
                       )}
                     </div>
-                  ))}
-                </div>
+                    {plan.factors.length > 0 && (
+                      <div className="border-t border-slate-100 px-5 py-3">
+                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Rating Factors</p>
+                        <div className="divide-y divide-slate-50">
+                          {plan.factors.map((f, i) => (
+                            <div key={i} className="flex justify-between py-1.5 text-sm">
+                              <span className="text-slate-500">{f.label}</span>
+                              <span className="font-semibold text-slate-800">{f.value}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
 

@@ -32,13 +32,18 @@ export interface A360Product {
   quoting_fields: A360QuotingField[];
 }
 
+export interface A360PlanResult {
+  plan_id: string;
+  plan_name: string;
+  base_premium: number | null;
+  rate: number | null;
+  factors: { label: string; value: number }[];
+  breakdown: string;
+  error?: string;
+}
+
 export interface A360QuoteResult {
   quote_id: string | null;
-  rate: {
-    final_rate: number;
-    factors: { label: string; value: number }[];
-    breakdown: string;
-  } | null;
-  plans: { id: string; name: string; base_premium: number | null }[];
   product_name: string;
+  plan_results: A360PlanResult[];
 }
