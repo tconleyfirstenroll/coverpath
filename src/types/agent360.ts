@@ -36,6 +36,8 @@ export interface A360PlanResult {
   plan_id: string;
   plan_name: string;
   base_premium: number | null;
+  deductible: number | null;
+  coverage_details: Record<string, string>;
   rate: number | null;
   factors: { label: string; value: number }[];
   breakdown: string;

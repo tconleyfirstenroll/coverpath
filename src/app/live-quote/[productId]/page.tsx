@@ -313,18 +313,40 @@ export default function LiveQuotePage() {
                         <span className="text-sm text-red-500">{plan.error ?? 'Rate unavailable'}</span>
                       )}
                     </div>
+                    {(plan.deductible != null || Object.keys(plan.coverage_details ?? {}).length > 0) && (
+                      <div className="border-t border-slate-100 px-5 py-3 space-y-1.5">
+                        {plan.deductible != null && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-slate-500">Deductible</span>
+                            <span className="font-semibold text-slate-800">${plan.deductible.toLocaleString()}</span>
+                          </div>
+                        )}
+                        {Object.entries(plan.coverage_details ?? {}).map(([k, v]) => (
+                          <div key={k} className="flex justify-between text-sm">
+                            <span className="text-slate-500 capitalize">{k.replace(/_/g, ' ')}</span>
+                            <span className="font-semibold text-slate-800 text-right max-w-[55%]">{String(v)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     {plan.factors.length > 0 && (
-                      <div className="border-t border-slate-100 px-5 py-3">
-                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Rating Factors</p>
-                        <div className="divide-y divide-slate-50">
+                      <details className="border-t border-slate-100 px-5 py-2">
+                        <summary className="text-xs text-slate-400 cursor-pointer hover:text-slate-600 py-1">Rating factors</summary>
+                        <div className="mt-1 space-y-1 pt-1">
+                          {plan.base_premium != null && (
+                            <div className="flex justify-between text-xs">
+                              <span className="text-slate-500">Base Premium</span>
+                              <span className="font-mono text-slate-700">${plan.base_premium.toFixed(2)}</span>
+                            </div>
+                          )}
                           {plan.factors.map((f, i) => (
-                            <div key={i} className="flex justify-between py-1.5 text-sm">
+                            <div key={i} className="flex justify-between text-xs">
                               <span className="text-slate-500">{f.label}</span>
-                              <span className="font-semibold text-slate-800">{f.value}</span>
+                              <span className="font-mono text-slate-700">× {f.value}</span>
                             </div>
                           ))}
                         </div>
-                      </div>
+                      </details>
                     )}
                   </div>
                 ))}
