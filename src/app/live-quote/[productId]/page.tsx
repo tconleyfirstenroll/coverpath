@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Zap, Loader2, Building2, AlertCircle,
-  CheckCircle2, RotateCcw, Phone, ChevronRight,
+  CheckCircle2, RotateCcw, Phone, ChevronRight, Mail,
 } from 'lucide-react';
 import type { A360Product, A360QuoteResult } from '@/types/agent360';
 
@@ -43,6 +43,9 @@ export default function LiveQuotePage() {
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [quoteResult, setQuoteResult] = useState<A360QuoteResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [emailInput, setEmailInput] = useState('');
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [emailError, setEmailError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`/api/a360-products/${productId}`)
@@ -102,6 +105,33 @@ export default function LiveQuotePage() {
     setFormValues({});
     setQuoteResult(null);
     setErrorMessage(null);
+    setEmailInput('');
+    setEmailStatus('idle');
+    setEmailError(null);
+  };
+
+  const handleEmailQuote = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quoteResult?.quote_id) return;
+    setEmailStatus('sending');
+    setEmailError(null);
+    try {
+      const res = await fetch('/api/a360-quote-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quote_id: quoteResult.quote_id, email: emailInput }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setEmailError(json.error ?? 'Could not send quote. Please try again.');
+        setEmailStatus('error');
+      } else {
+        setEmailStatus('sent');
+      }
+    } catch {
+      setEmailError('A network error occurred. Please try again.');
+      setEmailStatus('error');
+    }
   };
 
   // ── Loading ──────────────────────────────────────────────────────────────
@@ -350,6 +380,51 @@ export default function LiveQuotePage() {
                     )}
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Save / Email Quote */}
+            {quoteResult.quote_id && (
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                <div className="flex items-center gap-2 mb-1">
+                  <Mail className="w-4 h-4 text-blue-600" />
+                  <p className="font-semibold text-slate-900">Save this quote</p>
+                </div>
+                <p className="text-slate-500 text-sm mb-4">
+                  Enter your email and we&apos;ll send you a copy to review any time.
+                </p>
+                {emailStatus === 'sent' ? (
+                  <div className="flex items-center gap-2 text-sm text-teal-600 font-medium">
+                    <CheckCircle2 className="w-4 h-4" />
+                    Quote sent! Check your inbox.
+                  </div>
+                ) : (
+                  <form onSubmit={handleEmailQuote} className="flex gap-2">
+                    <input
+                      type="email"
+                      required
+                      value={emailInput}
+                      onChange={(e) => { setEmailInput(e.target.value); setEmailError(null); }}
+                      placeholder="your@email.com"
+                      className="flex-1 h-10 rounded-lg border border-slate-300 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <button
+                      type="submit"
+                      disabled={emailStatus === 'sending'}
+                      className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-semibold px-4 py-2 rounded-lg text-sm transition-colors whitespace-nowrap"
+                    >
+                      {emailStatus === 'sending' ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Mail className="w-4 h-4" />
+                      )}
+                      {emailStatus === 'sending' ? 'Sending…' : 'Email My Quote'}
+                    </button>
+                  </form>
+                )}
+                {emailStatus === 'error' && emailError && (
+                  <p className="text-xs text-red-500 mt-2">{emailError}</p>
+                )}
               </div>
             )}
 
