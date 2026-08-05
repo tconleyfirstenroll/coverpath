@@ -245,7 +245,9 @@ export default function LiveQuotePage() {
                         >
                           <option value="">Select…</option>
                           {(field.options?.length
-                            ? field.options.map((o) => ({ label: o, value: o }))
+                            ? (field.options as (string | { value: string; label: string })[]).map((o) =>
+                                typeof o === 'string' ? { label: o, value: o } : o
+                              )
                             : SELECT_OPTIONS[field.field_key] ?? []
                           ).map((opt) => (
                             <option key={opt.value} value={opt.value}>{opt.label}</option>
