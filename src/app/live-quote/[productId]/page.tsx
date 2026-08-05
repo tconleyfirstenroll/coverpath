@@ -5,8 +5,9 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Zap, Loader2, Building2, AlertCircle,
-  CheckCircle2, RotateCcw, Phone, ChevronRight, Mail,
+  CheckCircle2, RotateCcw, Phone, ChevronRight, Mail, ClipboardList,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import type { A360Product, A360QuoteResult } from '@/types/agent360';
 
 type Step = 'loading' | 'not-found' | 'form' | 'calculating' | 'results' | 'error';
@@ -37,6 +38,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 export default function LiveQuotePage() {
   const { productId } = useParams<{ productId: string }>();
+  const router = useRouter();
 
   const [step, setStep] = useState<Step>('loading');
   const [product, setProduct] = useState<A360Product | null>(null);
@@ -377,6 +379,28 @@ export default function LiveQuotePage() {
                           ))}
                         </div>
                       </details>
+                    )}
+                    {/* Enroll button — shown when rate is available */}
+                    {plan.rate != null && !plan.error && (
+                      <div className="border-t border-slate-100 px-5 py-3">
+                        <button
+                          onClick={() => {
+                            const params = new URLSearchParams({
+                              plan_id: plan.plan_id || '',
+                              plan_name: plan.plan_name,
+                              rate: String(plan.rate),
+                              dob: formValues['date_of_birth'] || '',
+                              sex: formValues['sex'] || '',
+                              ...(quoteResult?.quote_id ? { quote_id: quoteResult.quote_id } : {}),
+                            });
+                            router.push(`/live-quote/${productId}/enroll?${params.toString()}`);
+                          }}
+                          className="w-full flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-bold py-2.5 rounded-xl transition-colors text-sm"
+                        >
+                          <ClipboardList className="w-4 h-4" />
+                          Enroll in This Plan
+                        </button>
+                      </div>
                     )}
                   </div>
                 ))}
