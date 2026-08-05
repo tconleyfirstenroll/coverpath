@@ -461,7 +461,7 @@ export default function ConsumerEnrollPage() {
               {Object.values(uwQ).some((v) => v === 'yes') && (
                 <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
                   <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
-                  <p className="text-sm text-amber-800">A "Yes" answer will require underwriting review before your coverage can be activated. Our team will contact you within 2–3 business days.</p>
+                  <p className="text-sm text-amber-800">A &quot;Yes&quot; answer will require underwriting review before your coverage can be activated. Our team will contact you within 2&ndash;3 business days.</p>
                 </div>
               )}
 
