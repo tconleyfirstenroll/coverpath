@@ -2,9 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle2, ChevronRight, HelpCircle, Zap } from 'lucide-react';
 import { getCategoryBySlug, CATEGORY_SLUGS } from '@/lib/categories';
-import { getPlansByCategory } from '@/lib/plans';
 import { fetchA360Products } from '@/lib/agent360';
-import { PlanCard } from '@/components/plans/plan-card';
 import { Agent360ProductCard } from '@/components/plans/agent360-product-card';
 import { Button } from '@/components/ui/button';
 import type { A360Product } from '@/types/agent360';
@@ -35,9 +33,8 @@ function matchesCategory(product: A360Product, slug: string): boolean {
 }
 
 export default async function CategoryPage({ params }: Props) {
-  const [cat, plans, { data: allLive }] = await Promise.all([
+  const [cat, { data: allLive }] = await Promise.all([
     getCategoryBySlug(params.category),
-    getPlansByCategory(params.category),
     fetchA360Products(),
   ]);
 
@@ -82,23 +79,11 @@ export default async function CategoryPage({ params }: Props) {
               <p className="text-slate-600 leading-relaxed">{cat.longDescription}</p>
             </section>
 
-            <section>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold text-slate-900">Available Plans</h2>
-                <span className="text-sm text-slate-500">{plans.length} option{plans.length !== 1 ? 's' : ''}</span>
-              </div>
-              <div className="grid sm:grid-cols-2 gap-5">
-                {plans.map((plan) => (
-                  <PlanCard key={plan.id} plan={plan} />
-                ))}
-              </div>
-            </section>
-
-            {liveProducts.length > 0 && (
-              <section className="mt-10">
+            {liveProducts.length > 0 ? (
+              <section>
                 <div className="flex items-center gap-2 mb-2">
                   <Zap className="w-5 h-5 text-blue-600" />
-                  <h2 className="text-2xl font-bold text-slate-900">Live Rated Products</h2>
+                  <h2 className="text-2xl font-bold text-slate-900">Available Plans</h2>
                 </div>
                 <p className="text-slate-500 text-sm mb-5">
                   These products are priced in real time based on your details — get an accurate rate in seconds.
@@ -108,6 +93,10 @@ export default async function CategoryPage({ params }: Props) {
                     <Agent360ProductCard key={product.id} product={product} />
                   ))}
                 </div>
+              </section>
+            ) : (
+              <section>
+                <p className="text-slate-500 text-sm">No plans are currently available in this category.</p>
               </section>
             )}
 
