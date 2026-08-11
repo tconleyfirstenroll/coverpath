@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle2, Shield, Mail, ArrowRight, Loader2, FileText } from 'lucide-react';
@@ -13,7 +13,7 @@ interface ApplicationSummary {
   customer_first_name: string | null;
 }
 
-export default function EnrollmentSuccessPage() {
+function EnrollmentSuccessContent() {
   const searchParams = useSearchParams();
   const applicationId = searchParams.get('application_id');
 
@@ -154,5 +154,17 @@ export default function EnrollmentSuccessPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function EnrollmentSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-[calc(100vh-130px)] bg-slate-50 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-slate-300" />
+      </div>
+    }>
+      <EnrollmentSuccessContent />
+    </Suspense>
   );
 }
