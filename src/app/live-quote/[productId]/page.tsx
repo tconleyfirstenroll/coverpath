@@ -5,10 +5,11 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Zap, Loader2, Building2, AlertCircle,
-  CheckCircle2, RotateCcw, Phone, ChevronRight, Mail, ClipboardList,
+  CheckCircle2, RotateCcw, Phone, ChevronRight, Mail, ClipboardList, HelpCircle,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import type { A360Product, A360QuoteResult } from '@/types/agent360';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 type Step = 'loading' | 'not-found' | 'form' | 'calculating' | 'results' | 'error';
 
@@ -80,6 +81,11 @@ export default function LiveQuotePage() {
       const json = await res.json();
       if (!res.ok) {
         setErrorMessage(json.error ?? 'Unable to calculate rate. Please try again.');
+        setStep('error');
+        return;
+      }
+      if (json.declined || json.unavailable) {
+        setErrorMessage(json.message ?? 'We are unable to quote this product because of the information provided.');
         setStep('error');
         return;
       }
@@ -162,6 +168,7 @@ export default function LiveQuotePage() {
   const categoryLabel = CATEGORY_LABELS[product.category] ?? product.category;
 
   return (
+    <TooltipProvider>
     <div className="min-h-screen bg-slate-50">
       {/* Top nav */}
       <div className="bg-white border-b border-slate-200">
@@ -221,9 +228,27 @@ export default function LiveQuotePage() {
                 <div className="grid sm:grid-cols-2 gap-5">
                   {sortedFields.map((field) => (
                     <div key={field.id} className={field.field_type === 'textarea' ? 'sm:col-span-2' : ''}>
-                      <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                        {field.field_label}
-                        {field.is_required && <span className="text-red-500 ml-1">*</span>}
+                      <label className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 mb-1.5">
+                        <span>
+                          {field.field_label}
+                          {field.is_required && <span className="text-red-500 ml-1">*</span>}
+                        </span>
+                        {field.help_text && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                type="button"
+                                className="text-slate-400 hover:text-slate-600"
+                                aria-label={`More information about ${field.field_label}`}
+                              >
+                                <HelpCircle className="w-3.5 h-3.5" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs whitespace-pre-wrap text-left">
+                              {field.help_text}
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
                       </label>
                       {field.field_type === 'boolean' ? (
                         <select
@@ -484,5 +509,6 @@ export default function LiveQuotePage() {
         )}
       </div>
     </div>
+    </TooltipProvider>
   );
 }

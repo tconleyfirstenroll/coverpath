@@ -6,6 +6,8 @@ export interface A360QuotingField {
   is_required: boolean;
   display_order: number;
   options: string[] | { value: string; label: string }[];
+  /** Optional expanded explanation shown in a mouseover tooltip next to the label. */
+  help_text?: string | null;
 }
 
 export interface A360Plan {
@@ -48,4 +50,13 @@ export interface A360QuoteResult {
   quote_id: string | null;
   product_name: string;
   plan_results: A360PlanResult[];
+  /** Set when the product could not be quoted at all — a knockout answer, a
+   * state/ZIP restriction, or another eligibility/configuration issue.
+   * `message` is a ready-to-display "We are unable to quote this product
+   * because of ..." sentence; render it instead of plan_results/results UI. */
+  declined?: boolean;
+  unavailable?: boolean;
+  message?: string;
+  reason?: string;
+  failed_field_labels?: string[];
 }
