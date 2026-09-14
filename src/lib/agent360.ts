@@ -36,18 +36,20 @@ export async function fetchA360Product(id: string): Promise<A360Product | null> 
   }
 }
 
-export async function fetchA360ZipState(productId: string, zip: string): Promise<string | null> {
-  if (!BASE_URL || !API_KEY) return null;
+/** Whole zip3-prefix -> state map for a product, fetched once and cached
+ * client-side rather than round-tripping per ZIP the consumer types. */
+export async function fetchA360ZipStates(productId: string): Promise<Record<string, string>> {
+  if (!BASE_URL || !API_KEY) return {};
   try {
     const res = await fetch(
-      `${BASE_URL}/api/public/products/${productId}/zip-state?zip=${encodeURIComponent(zip)}&agent_number=${encodeURIComponent(DEFAULT_AGENT_NUMBER)}`,
+      `${BASE_URL}/api/public/products/${productId}/zip-states?agent_number=${encodeURIComponent(DEFAULT_AGENT_NUMBER)}`,
       { headers: headers(), cache: 'no-store' }
     );
-    if (!res.ok) return null;
+    if (!res.ok) return {};
     const json = await res.json();
-    return json.state ?? null;
+    return json.map ?? {};
   } catch {
-    return null;
+    return {};
   }
 }
 

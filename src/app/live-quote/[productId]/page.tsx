@@ -49,7 +49,9 @@ export default function LiveQuotePage() {
   const [emailInput, setEmailInput] = useState('');
   const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [emailError, setEmailError] = useState<string | null>(null);
-  const [zipState, setZipState] = useState<string | null>(null);
+  // zip3 prefix -> state, fetched once per product (see the effect below)
+  // rather than round-tripping per ZIP entered.
+  const [zipStateMap, setZipStateMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetch(`/api/a360-products/${productId}`)
@@ -69,23 +71,20 @@ export default function LiveQuotePage() {
     (a, b) => a.display_order - b.display_order
   );
 
-  // Resolve the ZIP's state (debounced) so state-gated fields (e.g. the
-  // STM-70200-GC TX-only waiver rider) can hide/show as the consumer types,
-  // ahead of submit.
-  const zip = formValues['zip'];
+  // Fetch the product's whole zip3-prefix -> state map once (a few hundred
+  // rows at most) so state-gated fields (e.g. the STM-70200-GC TX-only
+  // waiver rider) can resolve locally as the consumer types, instead of a
+  // network round trip per ZIP entered.
   useEffect(() => {
-    if (!product || !zip || zip.length < 5) {
-      setZipState(null);
-      return;
-    }
-    const timer = setTimeout(() => {
-      fetch(`/api/a360-zip-state/${product.id}?zip=${encodeURIComponent(zip)}`)
-        .then((r) => (r.ok ? r.json() : { state: null }))
-        .then((json) => setZipState(json.state ?? null))
-        .catch(() => setZipState(null));
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [product, zip]);
+    if (!product) return;
+    fetch(`/api/a360-zip-states/${product.id}`)
+      .then((r) => (r.ok ? r.json() : { map: {} }))
+      .then((json) => setZipStateMap(json.map ?? {}))
+      .catch(() => setZipStateMap({}));
+  }, [product]);
+
+  const zip = formValues['zip'];
+  const zipState = zip && zip.length >= 5 ? zipStateMap[zip.slice(0, 3)] ?? null : null;
 
   const isFieldVisible = (field: A360QuotingField) => {
     if (field.depends_on_field_key && formValues[field.depends_on_field_key] !== field.depends_on_value) {
