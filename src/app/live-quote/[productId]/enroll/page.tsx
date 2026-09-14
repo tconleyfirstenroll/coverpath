@@ -7,6 +7,7 @@ import {
   ArrowLeft, ArrowRight, CheckCircle2, Loader2, User, UserPlus,
   Shield, ClipboardList, AlertCircle, ChevronRight,
 } from 'lucide-react';
+import { isValidSSN, formatSSNInput } from '@/lib/ssn';
 
 // ─────────────────────────────────────────────
 // Types
@@ -94,6 +95,31 @@ function TextInput({
   );
 }
 
+function SSNInput({
+  value, onChange, required,
+}: {
+  value: string; onChange: (v: string) => void; required?: boolean;
+}) {
+  const [touched, setTouched] = useState(false);
+  const invalid = touched && value.length > 0 && !isValidSSN(value);
+  return (
+    <div>
+      <input
+        type="text"
+        inputMode="numeric"
+        value={value}
+        onChange={(e) => onChange(formatSSNInput(e.target.value))}
+        onBlur={() => setTouched(true)}
+        placeholder="XXX-XX-XXXX"
+        maxLength={11}
+        required={required}
+        className={`${inputClass} ${invalid ? 'border-red-400 focus:ring-red-400' : ''}`}
+      />
+      {invalid && <p className="text-xs text-red-500 mt-1">Enter a valid 9-digit SSN (XXX-XX-XXXX).</p>}
+    </div>
+  );
+}
+
 function SelectInput({
   value, onChange, options, required,
 }: {
@@ -108,8 +134,8 @@ function SelectInput({
   );
 }
 
-function MemberFields({ data, onChange }: {
-  data: MemberForm; onChange: (field: keyof MemberForm, value: string) => void;
+function MemberFields({ data, onChange, hideHeight }: {
+  data: MemberForm; onChange: (field: keyof MemberForm, value: string) => void; hideHeight?: boolean;
 }) {
   const set = (k: keyof MemberForm) => (v: string) => onChange(k, v);
   return (
@@ -126,14 +152,16 @@ function MemberFields({ data, onChange }: {
       </Field>
       <Field label="Email" required><TextInput type="email" value={data.email} onChange={set('email')} required /></Field>
       <Field label="Daytime Phone" required><TextInput type="tel" value={data.phone} onChange={set('phone')} required /></Field>
-      <Field label="Social Security Number" required><TextInput value={data.ssn} onChange={set('ssn')} placeholder="XXX-XX-XXXX" required /></Field>
+      <Field label="Social Security Number" required><SSNInput value={data.ssn} onChange={set('ssn')} required /></Field>
       <div className="sm:col-span-2">
         <Field label="Street Address" required><TextInput value={data.address} onChange={set('address')} required /></Field>
       </div>
       <Field label="City" required><TextInput value={data.city} onChange={set('city')} required /></Field>
       <Field label="State" required><TextInput value={data.state} onChange={set('state')} placeholder="GA" required /></Field>
       <Field label="Zip Code" required><TextInput value={data.zip} onChange={set('zip')} required /></Field>
-      <Field label="Height (e.g. 5ft 10in)" required><TextInput value={data.height} onChange={set('height')} placeholder="5ft 10in" required /></Field>
+      {!hideHeight && (
+        <Field label="Height (e.g. 5ft 10in)" required><TextInput value={data.height} onChange={set('height')} placeholder="5ft 10in" required /></Field>
+      )}
       <Field label="Weight (lbs)" required><TextInput type="number" value={data.weight} onChange={set('weight')} required /></Field>
       <Field label="Beneficiary Name"><TextInput value={data.beneficiary_1} onChange={set('beneficiary_1')} /></Field>
       <Field label="Beneficiary Name #2"><TextInput value={data.beneficiary_2} onChange={set('beneficiary_2')} /></Field>
@@ -141,8 +169,8 @@ function MemberFields({ data, onChange }: {
   );
 }
 
-function SpouseFields({ data, onChange }: {
-  data: SpouseForm; onChange: (field: keyof SpouseForm, value: string) => void;
+function SpouseFields({ data, onChange, hideHeight }: {
+  data: SpouseForm; onChange: (field: keyof SpouseForm, value: string) => void; hideHeight?: boolean;
 }) {
   const set = (k: keyof SpouseForm) => (v: string) => onChange(k, v);
   return (
@@ -159,8 +187,10 @@ function SpouseFields({ data, onChange }: {
       </Field>
       <Field label="Email" required><TextInput type="email" value={data.email} onChange={set('email')} required /></Field>
       <Field label="Daytime Phone" required><TextInput type="tel" value={data.phone} onChange={set('phone')} required /></Field>
-      <Field label="Social Security Number" required><TextInput value={data.ssn} onChange={set('ssn')} placeholder="XXX-XX-XXXX" required /></Field>
-      <Field label="Height (e.g. 5ft 10in)" required><TextInput value={data.height} onChange={set('height')} placeholder="5ft 10in" required /></Field>
+      <Field label="Social Security Number" required><SSNInput value={data.ssn} onChange={set('ssn')} required /></Field>
+      {!hideHeight && (
+        <Field label="Height (e.g. 5ft 10in)" required><TextInput value={data.height} onChange={set('height')} placeholder="5ft 10in" required /></Field>
+      )}
       <Field label="Weight (lbs)" required><TextInput type="number" value={data.weight} onChange={set('weight')} required /></Field>
       <Field label="Beneficiary Name"><TextInput value={data.beneficiary_1} onChange={set('beneficiary_1')} /></Field>
       <Field label="Beneficiary Name #2"><TextInput value={data.beneficiary_2} onChange={set('beneficiary_2')} /></Field>
@@ -179,6 +209,10 @@ export default function ConsumerEnrollPage() {
   const planId = searchParams.get('plan_id') || '';
   const quoteId = searchParams.get('quote_id') || '';
   const planName = searchParams.get('plan_name') || 'Selected Plan';
+  // STM-70200-GC doesn't need height — its only body-size knockout is a flat
+  // weight-threshold question, answered at quote time. This generic enroll
+  // form otherwise assumes a life-insurance shape (height + weight).
+  const hideHeight = searchParams.get('product_code') === 'STM-70200-GC';
   const rateStr = searchParams.get('rate') || '';
   const monthlyPremium = rateStr ? parseFloat(rateStr) : 0;
   const coverageAmount = planName.replace(' Coverage', '');
@@ -345,10 +379,10 @@ export default function ConsumerEnrollPage() {
                 <User className="h-5 w-5 text-blue-600" />
                 <h2 className="text-lg font-bold text-slate-900">Your Information</h2>
               </div>
-              <MemberFields data={member} onChange={updateMember} />
+              <MemberFields data={member} onChange={updateMember} hideHeight={hideHeight} />
               <button
                 onClick={() => setStep(2)}
-                disabled={!member.first_name || !member.last_name || !member.email || !member.dob || !member.sex}
+                disabled={!member.first_name || !member.last_name || !member.email || !member.dob || !member.sex || !isValidSSN(member.ssn)}
                 className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-colors"
               >
                 Continue <ArrowRight className="h-4 w-4" />
@@ -376,7 +410,7 @@ export default function ConsumerEnrollPage() {
 
               {addSpouse && (
                 <div className="border-t pt-4">
-                  <SpouseFields data={spouse} onChange={updateSpouse} />
+                  <SpouseFields data={spouse} onChange={updateSpouse} hideHeight={hideHeight} />
                 </div>
               )}
 
@@ -389,7 +423,7 @@ export default function ConsumerEnrollPage() {
                 </button>
                 <button
                   onClick={() => setStep(3)}
-                  disabled={addSpouse && (!spouse.first_name || !spouse.last_name || !spouse.email || !spouse.dob || !spouse.sex)}
+                  disabled={addSpouse && (!spouse.first_name || !spouse.last_name || !spouse.email || !spouse.dob || !spouse.sex || !isValidSSN(spouse.ssn))}
                   className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-colors"
                 >
                   Continue <ArrowRight className="h-4 w-4" />

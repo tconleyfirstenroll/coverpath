@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Shield, Phone, Mail, MapPin } from 'lucide-react';
 
 const PLAN_LINKS = [
+  { label: 'Life Insurance', href: '/plans/life' },
   { label: 'Short Term Medical', href: '/plans/short-term-medical' },
   { label: 'Hospital Indemnity', href: '/plans/hospital-indemnity' },
   { label: 'Cancer Plans', href: '/plans/cancer' },

@@ -2,12 +2,13 @@ import Link from 'next/link';
 import {
   ArrowRight, Shield, Star, Check, Phone,
   ClipboardList, Search, CreditCard,
-  Heart, Eye, Pill, AlertCircle, Building2, Ribbon,
+  Heart, Eye, Pill, AlertCircle, Building2, Ribbon, Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getCategories } from '@/lib/categories';
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  'life': <Users className="w-6 h-6" />,
   'short-term-medical': <Heart className="w-6 h-6" />,
   'hospital-indemnity': <Building2 className="w-6 h-6" />,
   'cancer': <Ribbon className="w-6 h-6" />,

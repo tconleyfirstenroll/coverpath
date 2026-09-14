@@ -36,6 +36,21 @@ export async function fetchA360Product(id: string): Promise<A360Product | null> 
   }
 }
 
+export async function fetchA360ZipState(productId: string, zip: string): Promise<string | null> {
+  if (!BASE_URL || !API_KEY) return null;
+  try {
+    const res = await fetch(
+      `${BASE_URL}/api/public/products/${productId}/zip-state?zip=${encodeURIComponent(zip)}&agent_number=${encodeURIComponent(DEFAULT_AGENT_NUMBER)}`,
+      { headers: headers(), cache: 'no-store' }
+    );
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json.state ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function submitA360Quote(
   productId: string,
   consumerData: Record<string, unknown>

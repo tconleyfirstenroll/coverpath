@@ -10,6 +10,7 @@ const NAV_LINKS = [
     label: 'Plans',
     href: '/plans',
     children: [
+      { label: 'Life Insurance', href: '/plans/life' },
       { label: 'Short Term Medical', href: '/plans/short-term-medical' },
       { label: 'Hospital Indemnity', href: '/plans/hospital-indemnity' },
       { label: 'Cancer Plans', href: '/plans/cancer' },

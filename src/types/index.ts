@@ -5,7 +5,8 @@ export type PlanCategory =
   | 'dental'
   | 'vision'
   | 'prescription'
-  | 'critical-illness';
+  | 'critical-illness'
+  | 'life';
 
 export interface PlanBenefit {
   label: string;

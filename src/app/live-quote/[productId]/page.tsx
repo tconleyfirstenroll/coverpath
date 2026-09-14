@@ -8,7 +8,7 @@ import {
   CheckCircle2, RotateCcw, Phone, ChevronRight, Mail, ClipboardList, HelpCircle,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import type { A360Product, A360QuoteResult } from '@/types/agent360';
+import type { A360Product, A360QuoteResult, A360QuotingField } from '@/types/agent360';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 type Step = 'loading' | 'not-found' | 'form' | 'calculating' | 'results' | 'error';
@@ -49,6 +49,7 @@ export default function LiveQuotePage() {
   const [emailInput, setEmailInput] = useState('');
   const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [emailError, setEmailError] = useState<string | null>(null);
+  const [zipState, setZipState] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`/api/a360-products/${productId}`)
@@ -67,6 +68,47 @@ export default function LiveQuotePage() {
   const sortedFields = [...(product?.quoting_fields ?? [])].sort(
     (a, b) => a.display_order - b.display_order
   );
+
+  // Resolve the ZIP's state (debounced) so state-gated fields (e.g. the
+  // STM-70200-GC TX-only waiver rider) can hide/show as the consumer types,
+  // ahead of submit.
+  const zip = formValues['zip'];
+  useEffect(() => {
+    if (!product || !zip || zip.length < 5) {
+      setZipState(null);
+      return;
+    }
+    const timer = setTimeout(() => {
+      fetch(`/api/a360-zip-state/${product.id}?zip=${encodeURIComponent(zip)}`)
+        .then((r) => (r.ok ? r.json() : { state: null }))
+        .then((json) => setZipState(json.state ?? null))
+        .catch(() => setZipState(null));
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [product, zip]);
+
+  const isFieldVisible = (field: A360QuotingField) => {
+    if (field.depends_on_field_key && formValues[field.depends_on_field_key] !== field.depends_on_value) {
+      return false;
+    }
+    if (field.depends_on_state && zipState !== field.depends_on_state) {
+      return false;
+    }
+    return true;
+  };
+  const visibleFields = sortedFields.filter(isFieldVisible);
+
+  const handleFieldChange = (key: string, value: string) => {
+    setFormValues((prev) => {
+      const next = { ...prev, [key]: value };
+      for (const f of sortedFields) {
+        if (f.depends_on_field_key === key && next[f.depends_on_field_key] !== f.depends_on_value) {
+          delete next[f.field_key];
+        }
+      }
+      return next;
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -226,7 +268,7 @@ export default function LiveQuotePage() {
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="grid sm:grid-cols-2 gap-5">
-                  {sortedFields.map((field) => (
+                  {visibleFields.map((field) => (
                     <div key={field.id} className={field.field_type === 'textarea' ? 'sm:col-span-2' : ''}>
                       <label className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 mb-1.5">
                         <span>
@@ -253,7 +295,7 @@ export default function LiveQuotePage() {
                       {field.field_type === 'boolean' ? (
                         <select
                           value={formValues[field.field_key] ?? ''}
-                          onChange={(e) => setFormValues((p) => ({ ...p, [field.field_key]: e.target.value }))}
+                          onChange={(e) => handleFieldChange(field.field_key, e.target.value)}
                           required={field.is_required}
                           className="w-full h-10 rounded-lg border border-slate-300 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                         >
@@ -264,7 +306,7 @@ export default function LiveQuotePage() {
                       ) : field.field_type === 'select' ? (
                         <select
                           value={formValues[field.field_key] ?? ''}
-                          onChange={(e) => setFormValues((p) => ({ ...p, [field.field_key]: e.target.value }))}
+                          onChange={(e) => handleFieldChange(field.field_key, e.target.value)}
                           required={field.is_required}
                           className="w-full h-10 rounded-lg border border-slate-300 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                         >
@@ -281,7 +323,7 @@ export default function LiveQuotePage() {
                       ) : field.field_type === 'textarea' ? (
                         <textarea
                           value={formValues[field.field_key] ?? ''}
-                          onChange={(e) => setFormValues((p) => ({ ...p, [field.field_key]: e.target.value }))}
+                          onChange={(e) => handleFieldChange(field.field_key, e.target.value)}
                           required={field.is_required}
                           rows={3}
                           placeholder={field.field_label}
@@ -297,7 +339,7 @@ export default function LiveQuotePage() {
                             : 'text'
                           }
                           value={formValues[field.field_key] ?? ''}
-                          onChange={(e) => setFormValues((p) => ({ ...p, [field.field_key]: e.target.value }))}
+                          onChange={(e) => handleFieldChange(field.field_key, e.target.value)}
                           required={field.is_required}
                           placeholder={field.field_label}
                           className="w-full h-10 rounded-lg border border-slate-300 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -418,6 +460,7 @@ export default function LiveQuotePage() {
                               rate: String(plan.rate),
                               dob: formValues['date_of_birth'] || '',
                               sex: formValues['sex'] || '',
+                              product_code: product.code,
                               ...(quoteResult?.quote_id ? { quote_id: quoteResult.quote_id } : {}),
                             });
                             router.push(`/live-quote/${productId}/enroll?${params.toString()}`);

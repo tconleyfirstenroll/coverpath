@@ -4,6 +4,35 @@ import type { CategoryMeta, PlanCategory } from '@/types';
 
 const STATIC_CATEGORIES: CategoryMeta[] = [
   {
+    slug: 'life',
+    name: 'Life Insurance',
+    shortName: 'Life',
+    icon: '👨‍👩‍👧',
+    color: 'text-indigo-600',
+    bgColor: 'bg-indigo-50',
+    description: 'Financial protection for the people who depend on you.',
+    longDescription:
+      "Life insurance pays a tax-free death benefit to your beneficiaries if you pass away while covered — helping replace lost income, cover a mortgage, or fund a child's education. Term life plans offer straightforward, affordable coverage for a set number of years, and applications are rated instantly with no medical exam required on many plans.",
+    whoNeedsIt: [
+      'Parents with dependent children',
+      'Anyone with a mortgage or other debt',
+      'Primary or co-earners supporting a household',
+      'Those wanting to cover final expenses',
+      'Business owners with a buy-sell agreement',
+    ],
+    keyBenefits: [
+      'Tax-free death benefit to your beneficiaries',
+      'Rates locked in for the full term',
+      'No medical exam required on many plans',
+      'Coverage amounts to fit any budget',
+    ],
+    faqs: [
+      { question: 'How much coverage do I need?', answer: 'A common rule of thumb is 10–15x your annual income, adjusted for debts, dependents, and existing savings.' },
+      { question: 'Do I need a medical exam?', answer: 'Many term life plans are simplified issue — a health questionnaire instead of a paramedical exam — so a decision and coverage can be issued within minutes.' },
+      { question: 'Can my rate change after I enroll?', answer: 'No. Term life premiums are fixed for the length of the term you select.' },
+    ],
+  },
+  {
     slug: 'short-term-medical',
     name: 'Short Term Medical',
     shortName: 'Short Term',
@@ -218,6 +247,7 @@ export async function getCategoryBySlug(slug: string): Promise<CategoryMeta | un
 
 // Kept for generateStaticParams which needs category slugs synchronously at build time
 export const CATEGORY_SLUGS: PlanCategory[] = [
+  'life',
   'short-term-medical',
   'hospital-indemnity',
   'cancer',
