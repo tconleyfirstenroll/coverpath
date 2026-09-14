@@ -213,6 +213,20 @@ export default function ConsumerEnrollPage() {
   // weight-threshold question, answered at quote time. This generic enroll
   // form otherwise assumes a life-insurance shape (height + weight).
   const hideHeight = searchParams.get('product_code') === 'STM-70200-GC';
+  const effectiveDate = searchParams.get('effective_date') || '';
+  // The full set of quote-time answers (deductible, coinsurance, oop_max,
+  // coverage_max, payment_method, waiver_of_pre_ex_rider, zip, etc.) —
+  // otherwise none of this survives past the quote, only plan_id/premium do,
+  // even though the actual enrollment form/application needs them.
+  const quoteAnswersRaw = searchParams.get('quote_answers');
+  const quoteAnswers: Record<string, string> = (() => {
+    if (!quoteAnswersRaw) return {};
+    try {
+      return JSON.parse(quoteAnswersRaw);
+    } catch {
+      return {};
+    }
+  })();
   const rateStr = searchParams.get('rate') || '';
   const monthlyPremium = rateStr ? parseFloat(rateStr) : 0;
   const coverageAmount = planName.replace(' Coverage', '');
@@ -249,6 +263,8 @@ export default function ConsumerEnrollPage() {
         quote_id: quoteId || undefined,
         monthly_premium: monthlyPremium,
         coverage_amount: coverageAmount,
+        effective_date: effectiveDate || undefined,
+        quote_answers: quoteAnswers,
         member,
         spouse: addSpouse ? spouse : null,
         uw_questions: {

@@ -461,6 +461,8 @@ export default function LiveQuotePage() {
                               dob: formValues['date_of_birth'] || '',
                               sex: formValues['sex'] || '',
                               product_code: product.code,
+                              effective_date: formValues['effective_date'] || '',
+                              quote_answers: JSON.stringify(formValues),
                               ...(quoteResult?.quote_id ? { quote_id: quoteResult.quote_id } : {}),
                             });
                             router.push(`/live-quote/${productId}/enroll?${params.toString()}`);
