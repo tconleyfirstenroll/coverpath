@@ -13,6 +13,18 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 type Step = 'loading' | 'not-found' | 'form' | 'calculating' | 'results' | 'error';
 
+/** Field is visible when it has no depends_on_field_key, or when the
+ * current value of that sibling field is one of depends_on_values. An
+ * empty/missing depends_on_values with a depends_on_field_key set is
+ * treated as "always visible" — a data-entry safety net, not an intended
+ * permanently-hidden state. */
+function matchesDependency(field: A360QuotingField, formValues: Record<string, string>): boolean {
+  if (!field.depends_on_field_key) return true;
+  const allowedValues = field.depends_on_values ?? [];
+  if (allowedValues.length === 0) return true;
+  return allowedValues.includes(formValues[field.depends_on_field_key]);
+}
+
 const SELECT_OPTIONS: Record<string, { label: string; value: string }[]> = {
   gender: [
     { label: 'Male', value: 'Male' },
@@ -87,9 +99,7 @@ export default function LiveQuotePage() {
   const zipState = zip && zip.length >= 5 ? zipStateMap[zip.slice(0, 3)] ?? null : null;
 
   const isFieldVisible = (field: A360QuotingField) => {
-    if (field.depends_on_field_key && formValues[field.depends_on_field_key] !== field.depends_on_value) {
-      return false;
-    }
+    if (!matchesDependency(field, formValues)) return false;
     if (field.depends_on_state && zipState !== field.depends_on_state) {
       return false;
     }
@@ -101,7 +111,7 @@ export default function LiveQuotePage() {
     setFormValues((prev) => {
       const next = { ...prev, [key]: value };
       for (const f of sortedFields) {
-        if (f.depends_on_field_key === key && next[f.depends_on_field_key] !== f.depends_on_value) {
+        if (f.depends_on_field_key === key && !matchesDependency(f, next)) {
           delete next[f.field_key];
         }
       }

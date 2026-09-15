@@ -8,9 +8,9 @@ export interface A360QuotingField {
   options: string[] | { value: string; label: string }[];
   /** Optional expanded explanation shown in a mouseover tooltip next to the label. */
   help_text?: string | null;
-  /** Only render this field when the sibling field with this key currently equals depends_on_value. */
+  /** Only render this field when the sibling field with this key currently holds one of depends_on_values. */
   depends_on_field_key?: string | null;
-  depends_on_value?: string | null;
+  depends_on_values?: string[] | null;
   /** Only render this field when the ZIP entered so far resolves to this state. */
   depends_on_state?: string | null;
 }
