@@ -55,7 +55,14 @@ const EMPTY_UW: UWQuestions = {
   q3_member: 'no', q3_spouse: 'no',
 };
 
-type Step = 1 | 2 | 3 | 4;
+type Step = 'member' | 'spouse' | 'health' | 'review';
+
+const STEP_LABELS: Record<Step, string> = {
+  member: 'Your Info',
+  spouse: 'Spouse',
+  health: 'Health Questions',
+  review: 'Review',
+};
 
 // ─────────────────────────────────────────────
 // Field helpers
@@ -209,10 +216,12 @@ export default function ConsumerEnrollPage() {
   const planId = searchParams.get('plan_id') || '';
   const quoteId = searchParams.get('quote_id') || '';
   const planName = searchParams.get('plan_name') || 'Selected Plan';
-  // STM-70200-GC doesn't need height — its only body-size knockout is a flat
-  // weight-threshold question, answered at quote time. This generic enroll
-  // form otherwise assumes a life-insurance shape (height + weight).
-  const hideHeight = searchParams.get('product_code') === 'STM-70200-GC';
+  // STM-70200-GC doesn't need height, and doesn't use this generic enroll
+  // form's life-insurance-shaped "Health Questions" step at all — its own
+  // 6 knockout questions were already answered (and already declined the
+  // applicant if warranted) at quote time; see the "steps" derivation below.
+  const isSTM = searchParams.get('product_code') === 'STM-70200-GC';
+  const hideHeight = isSTM;
   const effectiveDate = searchParams.get('effective_date') || '';
   // The full set of quote-time answers (deductible, coinsurance, oop_max,
   // coverage_max, payment_method, waiver_of_pre_ex_rider, zip, etc.) —
@@ -231,11 +240,21 @@ export default function ConsumerEnrollPage() {
   const monthlyPremium = rateStr ? parseFloat(rateStr) : 0;
   const coverageAmount = planName.replace(' Coverage', '');
 
-  const [step, setStep] = useState<Step>(1);
+  // The steps actually presented, in order — "health" is omitted for STM
+  // products, so Next/Back naturally skip over it without special-casing
+  // the navigation.
+  const steps: Step[] = isSTM ? ['member', 'spouse', 'review'] : ['member', 'spouse', 'health', 'review'];
+  const [step, setStep] = useState<Step>('member');
+  const stepIndex = steps.indexOf(step);
+  const goNext = () => setStep(steps[stepIndex + 1] ?? step);
+  const goBack = () => setStep(steps[stepIndex - 1] ?? step);
+
   const [member, setMember] = useState<MemberForm>({
     ...EMPTY_MEMBER,
     dob: searchParams.get('dob') || '',
     sex: searchParams.get('sex') || '',
+    // Already answered on the quote form — no reason to ask again.
+    zip: quoteAnswers.zip || '',
   });
   const [addSpouse, setAddSpouse] = useState(false);
   const [spouse, setSpouse] = useState<SpouseForm>(EMPTY_SPOUSE);
@@ -250,8 +269,6 @@ export default function ConsumerEnrollPage() {
     setSpouse((prev) => ({ ...prev, [field]: value }));
   const updateUw = (field: keyof UWQuestions, value: string) =>
     setUwQ((prev) => ({ ...prev, [field]: value }));
-
-  const stepLabels = ['Your Info', 'Spouse', 'Health Questions', 'Review'];
 
   const handleSubmit = async () => {
     setSubmitting(true);
@@ -370,26 +387,25 @@ export default function ConsumerEnrollPage() {
 
         {/* Step indicator */}
         <div className="flex items-center gap-2 px-1">
-          {stepLabels.map((label, i) => {
-            const n = (i + 1) as Step;
-            const active = step === n;
-            const done = step > n;
+          {steps.map((id, i) => {
+            const active = step === id;
+            const done = stepIndex > i;
             return (
-              <div key={label} className="flex items-center gap-2">
+              <div key={id} className="flex items-center gap-2">
                 <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors
                   ${done ? 'bg-teal-600 text-white' : active ? 'bg-blue-100 text-blue-700 ring-2 ring-blue-600' : 'bg-slate-100 text-slate-400'}`}>
-                  {done ? '✓' : n}
+                  {done ? '✓' : i + 1}
                 </div>
-                <span className={`text-xs hidden sm:block ${active ? 'text-blue-700 font-semibold' : 'text-slate-400'}`}>{label}</span>
-                {i < stepLabels.length - 1 && <div className="h-px w-6 bg-slate-200" />}
+                <span className={`text-xs hidden sm:block ${active ? 'text-blue-700 font-semibold' : 'text-slate-400'}`}>{STEP_LABELS[id]}</span>
+                {i < steps.length - 1 && <div className="h-px w-6 bg-slate-200" />}
               </div>
             );
           })}
         </div>
 
         <div className={cardClass + ' space-y-6'}>
-          {/* Step 1: Member */}
-          {step === 1 && (
+          {/* Step: Member */}
+          {step === 'member' && (
             <>
               <div className="flex items-center gap-2">
                 <User className="h-5 w-5 text-blue-600" />
@@ -397,7 +413,7 @@ export default function ConsumerEnrollPage() {
               </div>
               <MemberFields data={member} onChange={updateMember} hideHeight={hideHeight} />
               <button
-                onClick={() => setStep(2)}
+                onClick={goNext}
                 disabled={!member.first_name || !member.last_name || !member.email || !member.dob || !member.sex || !isValidSSN(member.ssn)}
                 className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-colors"
               >
@@ -406,8 +422,8 @@ export default function ConsumerEnrollPage() {
             </>
           )}
 
-          {/* Step 2: Spouse */}
-          {step === 2 && (
+          {/* Step: Spouse */}
+          {step === 'spouse' && (
             <>
               <div className="flex items-center gap-2">
                 <UserPlus className="h-5 w-5 text-blue-600" />
@@ -432,13 +448,13 @@ export default function ConsumerEnrollPage() {
 
               <div className="flex gap-3">
                 <button
-                  onClick={() => setStep(1)}
+                  onClick={goBack}
                   className="flex-1 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors"
                 >
                   Back
                 </button>
                 <button
-                  onClick={() => setStep(3)}
+                  onClick={goNext}
                   disabled={addSpouse && (!spouse.first_name || !spouse.last_name || !spouse.email || !spouse.dob || !spouse.sex || !isValidSSN(spouse.ssn))}
                   className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-colors"
                 >
@@ -448,8 +464,8 @@ export default function ConsumerEnrollPage() {
             </>
           )}
 
-          {/* Step 3: Health questions */}
-          {step === 3 && (
+          {/* Step: Health questions (never reached for STM — omitted from `steps`) */}
+          {step === 'health' && (
             <>
               <div className="flex items-center gap-2">
                 <Shield className="h-5 w-5 text-blue-600" />
@@ -516,11 +532,11 @@ export default function ConsumerEnrollPage() {
               )}
 
               <div className="flex gap-3">
-                <button onClick={() => setStep(2)} className="flex-1 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors">
+                <button onClick={goBack} className="flex-1 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors">
                   Back
                 </button>
                 <button
-                  onClick={() => setStep(4)}
+                  onClick={goNext}
                   className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-colors"
                 >
                   Review <ArrowRight className="h-4 w-4" />
@@ -529,8 +545,8 @@ export default function ConsumerEnrollPage() {
             </>
           )}
 
-          {/* Step 4: Review */}
-          {step === 4 && (
+          {/* Step: Review */}
+          {step === 'review' && (
             <>
               <div className="flex items-center gap-2">
                 <ClipboardList className="h-5 w-5 text-blue-600" />
@@ -575,25 +591,27 @@ export default function ConsumerEnrollPage() {
                 </div>
               )}
 
-              <div className="border rounded-xl overflow-hidden text-sm">
-                <div className="bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-500 uppercase tracking-wide">Health Questions</div>
-                {(['q1', 'q2', 'q3'] as const).map((k, i) => (
-                  <div key={k} className="flex justify-between px-4 py-2.5 border-t">
-                    <span className="text-slate-500">Question {i + 1} (Member)</span>
-                    <span className={`font-bold ${uwQ[`${k}_member`] === 'yes' ? 'text-red-600' : 'text-teal-600'}`}>
-                      {uwQ[`${k}_member`].toUpperCase()}
-                    </span>
-                  </div>
-                ))}
-                {addSpouse && (['q1', 'q2', 'q3'] as const).map((k, i) => (
-                  <div key={`s${k}`} className="flex justify-between px-4 py-2.5 border-t">
-                    <span className="text-slate-500">Question {i + 1} (Spouse)</span>
-                    <span className={`font-bold ${uwQ[`${k}_spouse`] === 'yes' ? 'text-red-600' : 'text-teal-600'}`}>
-                      {uwQ[`${k}_spouse`].toUpperCase()}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              {!isSTM && (
+                <div className="border rounded-xl overflow-hidden text-sm">
+                  <div className="bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-500 uppercase tracking-wide">Health Questions</div>
+                  {(['q1', 'q2', 'q3'] as const).map((k, i) => (
+                    <div key={k} className="flex justify-between px-4 py-2.5 border-t">
+                      <span className="text-slate-500">Question {i + 1} (Member)</span>
+                      <span className={`font-bold ${uwQ[`${k}_member`] === 'yes' ? 'text-red-600' : 'text-teal-600'}`}>
+                        {uwQ[`${k}_member`].toUpperCase()}
+                      </span>
+                    </div>
+                  ))}
+                  {addSpouse && (['q1', 'q2', 'q3'] as const).map((k, i) => (
+                    <div key={`s${k}`} className="flex justify-between px-4 py-2.5 border-t">
+                      <span className="text-slate-500">Question {i + 1} (Spouse)</span>
+                      <span className={`font-bold ${uwQ[`${k}_spouse`] === 'yes' ? 'text-red-600' : 'text-teal-600'}`}>
+                        {uwQ[`${k}_spouse`].toUpperCase()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <p className="text-xs text-slate-400 text-center">
                 By submitting, you authorize us to process your enrollment application. Your information is encrypted and secure.
@@ -607,7 +625,7 @@ export default function ConsumerEnrollPage() {
               )}
 
               <div className="flex gap-3">
-                <button onClick={() => setStep(3)} className="flex-1 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors">
+                <button onClick={goBack} className="flex-1 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors">
                   Back
                 </button>
                 <button
