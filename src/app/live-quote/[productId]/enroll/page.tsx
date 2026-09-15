@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import {
@@ -164,7 +164,7 @@ function MemberFields({ data, onChange, hideHeight }: {
         <Field label="Street Address" required><TextInput value={data.address} onChange={set('address')} required /></Field>
       </div>
       <Field label="City" required><TextInput value={data.city} onChange={set('city')} required /></Field>
-      <Field label="State" required><TextInput value={data.state} onChange={set('state')} placeholder="GA" required /></Field>
+      <Field label="State" required><TextInput value={data.state} onChange={set('state')} placeholder="2-letter code" required /></Field>
       <Field label="Zip Code" required><TextInput value={data.zip} onChange={set('zip')} required /></Field>
       {!hideHeight && (
         <Field label="Height (e.g. 5ft 10in)" required><TextInput value={data.height} onChange={set('height')} placeholder="5ft 10in" required /></Field>
@@ -259,6 +259,32 @@ export default function ConsumerEnrollPage() {
   const [addSpouse, setAddSpouse] = useState(false);
   const [spouse, setSpouse] = useState<SpouseForm>(EMPTY_SPOUSE);
   const [uwQ, setUwQ] = useState<UWQuestions>(EMPTY_UW);
+
+  // The State field never got the same treatment as Zip: it was left
+  // entirely blank with a real state abbreviation ("GA") as its
+  // placeholder text — easy to mistake for a pre-filled default rather
+  // than empty hint text, and it never actually pulled from the ZIP the
+  // consumer already entered while quoting despite this exact zip3 ->
+  // state map already existing for the quote page's own conditional
+  // fields. Resolve it the same way here and backfill member.state once,
+  // only while the field is still blank (a consumer who's already typed
+  // something takes precedence).
+  const [zipStateMap, setZipStateMap] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (!productId) return;
+    fetch(`/api/a360-zip-states/${productId}`)
+      .then((res) => (res.ok ? res.json() : { map: {} }))
+      .then((json) => setZipStateMap(json.map ?? {}))
+      .catch(() => setZipStateMap({}));
+  }, [productId]);
+
+  useEffect(() => {
+    if (member.zip.length < 5) return;
+    const resolved = zipStateMap[member.zip.slice(0, 3)];
+    if (!resolved) return;
+    setMember((prev) => (prev.state ? prev : { ...prev, state: resolved }));
+  }, [zipStateMap, member.zip]);
+
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ application_id: string; application_number: string; uw_hold: boolean } | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
