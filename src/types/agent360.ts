@@ -37,6 +37,10 @@ export interface A360Product {
   carrier: A360Carrier | null;
   plans: A360Plan[];
   quoting_fields: A360QuotingField[];
+  /** Slug of an active phased quote journey for this product, if one
+   * exists — lets the product card offer a guided quick-quote walkthrough
+   * (/journey/[slug]) instead of the flat /live-quote form. */
+  journey_slug: string | null;
 }
 
 export interface A360PlanResult {
@@ -49,6 +53,70 @@ export interface A360PlanResult {
   factors: { label: string; value: number }[];
   breakdown: string;
   error?: string;
+}
+
+// ─────────────────────────────────────────────
+// Phased quote journeys (quick quote -> refine -> identity/submit)
+// ─────────────────────────────────────────────
+
+export interface A360JourneyPhase {
+  phase_number: number;
+  phase_type: 'quick_quote' | 'refine' | 'identity_submit';
+  title: string | null;
+  description: string | null;
+  fields: A360QuotingField[];
+}
+
+export interface A360JourneyInfo {
+  agent_id: string;
+  session_token: string;
+  journey: {
+    name: string;
+    public_title: string | null;
+    public_description: string | null;
+    collect_email: boolean;
+    collect_phone: boolean;
+    collect_address: boolean;
+    collect_ssn: boolean;
+    product_id: string | null;
+    phases: A360JourneyPhase[];
+  };
+  agent: {
+    first_name: string;
+    last_name: string;
+    agent_number: string;
+    email: string;
+    phone: string;
+  };
+}
+
+export interface A360PlanCard {
+  plan_id: string;
+  plan_name: string;
+  plan_code: string;
+  term_days: number;
+  state: string;
+  cheapest_rate: number;
+}
+
+export interface A360QuickQuoteResult {
+  plans: A360PlanCard[];
+  zip_state: string | null;
+}
+
+export interface A360RefineResult {
+  rate: number;
+  rate_breakdown: string;
+  issue_tier: string;
+  declined: boolean;
+  declined_reason?: string;
+}
+
+export interface A360FinalizeResult {
+  application_id: string;
+  application_number: string;
+  status: string;
+  agent: { first_name: string; last_name: string; email: string; phone: string } | null;
 }
 
 export interface A360QuoteResult {

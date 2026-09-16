@@ -101,15 +101,16 @@ export function Agent360ProductCard({ product, showCategory = false }: Agent360P
           </div>
         )}
 
-        {/* Actions */}
+        {/* Actions — a product with an active guided journey gets that
+            quick-quote-first walkthrough instead of the flat quote form. */}
         <div className="flex gap-2">
-          <Link href={`/live-quote/${product.id}`} className="flex-1">
+          <Link href={product.journey_slug ? `/journey/${product.journey_slug}` : `/live-quote/${product.id}`} className="flex-1">
             <button className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-colors">
               <Zap className="w-3.5 h-3.5" />
               Get My Rate
             </button>
           </Link>
-          <Link href={`/live-quote/${product.id}`}>
+          <Link href={product.journey_slug ? `/journey/${product.journey_slug}` : `/live-quote/${product.id}`}>
             <button className="border border-slate-200 hover:border-slate-300 p-2 rounded-lg transition-colors">
               <ChevronRight className="w-4 h-4 text-slate-500" />
             </button>
