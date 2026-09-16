@@ -7,7 +7,7 @@ import {
   ArrowLeft, ArrowRight, CheckCircle2, Loader2, User, UserPlus,
   Shield, ClipboardList, AlertCircle, ChevronRight,
 } from 'lucide-react';
-import { isValidSSN, formatSSNInput } from '@/lib/ssn';
+import { isValidSSN, formatSSNInput, formatPhoneInput } from '@/lib/ssn';
 
 // ─────────────────────────────────────────────
 // Types
@@ -102,6 +102,25 @@ function TextInput({
   );
 }
 
+function PhoneInput({
+  value, onChange, required,
+}: {
+  value: string; onChange: (v: string) => void; required?: boolean;
+}) {
+  return (
+    <input
+      type="tel"
+      inputMode="numeric"
+      value={value}
+      onChange={(e) => onChange(formatPhoneInput(e.target.value))}
+      placeholder="(XXX) XXX-XXXX"
+      maxLength={14}
+      required={required}
+      className={inputClass}
+    />
+  );
+}
+
 function SSNInput({
   value, onChange, required,
 }: {
@@ -158,7 +177,7 @@ function MemberFields({ data, onChange, hideHeight }: {
         ]} />
       </Field>
       <Field label="Email" required><TextInput type="email" value={data.email} onChange={set('email')} required /></Field>
-      <Field label="Daytime Phone" required><TextInput type="tel" value={data.phone} onChange={set('phone')} required /></Field>
+      <Field label="Daytime Phone" required><PhoneInput value={data.phone} onChange={set('phone')} required /></Field>
       <Field label="Social Security Number" required><SSNInput value={data.ssn} onChange={set('ssn')} required /></Field>
       <div className="sm:col-span-2">
         <Field label="Street Address" required><TextInput value={data.address} onChange={set('address')} required /></Field>
@@ -193,7 +212,7 @@ function SpouseFields({ data, onChange, hideHeight }: {
         ]} />
       </Field>
       <Field label="Email" required><TextInput type="email" value={data.email} onChange={set('email')} required /></Field>
-      <Field label="Daytime Phone" required><TextInput type="tel" value={data.phone} onChange={set('phone')} required /></Field>
+      <Field label="Daytime Phone" required><PhoneInput value={data.phone} onChange={set('phone')} required /></Field>
       <Field label="Social Security Number" required><SSNInput value={data.ssn} onChange={set('ssn')} required /></Field>
       {!hideHeight && (
         <Field label="Height (e.g. 5ft 10in)" required><TextInput value={data.height} onChange={set('height')} placeholder="5ft 10in" required /></Field>

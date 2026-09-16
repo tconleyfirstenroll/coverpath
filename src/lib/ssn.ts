@@ -1,7 +1,8 @@
-// SSN formatting/validation helpers for the enrollment form. Mirrors
-// agent360-rebuild's src/lib/ssn.ts (that's the server that ultimately
-// stores/encrypts the value — kept in sync here so the two forms behave
-// identically; the two repos don't share code).
+// SSN/phone formatting/validation helpers for the enrollment form. Mirrors
+// agent360-rebuild's src/lib/ssn.ts and entity-form.tsx's formatPhoneInput
+// (that's the server that ultimately stores/encrypts the value — kept in
+// sync here so the two forms behave identically; the two repos don't share
+// code).
 
 /**
  * True for a plausible, correctly-shaped SSN: 9 digits, formatted as
@@ -26,4 +27,16 @@ export function formatSSNInput(value: string): string {
   const digits = value.replace(/\D/g, '').slice(0, 9);
   const parts = [digits.slice(0, 3), digits.slice(3, 5), digits.slice(5, 9)].filter(Boolean);
   return parts.join('-');
+}
+
+/**
+ * Formats raw/partial digit input into (XXX) XXX-XXXX as the user types.
+ * Mirrors agent360-rebuild's formatPhoneInput (src/components/agents/entity-form.tsx).
+ */
+export function formatPhoneInput(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 10);
+  if (digits.length === 0) return '';
+  if (digits.length <= 3) return `(${digits}`;
+  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
 }
